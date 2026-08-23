@@ -1,15 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
+  "public": true,
   "routes": [
     {
+      "src": "/secretaria",
+      "dest": "/secretaria.html"
+    },
+    {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/index.html"
     }
   ]
 }

@@ -6,7 +6,7 @@
     <title>Portal de Instituciones - Modelos ONU</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h1 { color: #1f77b4; text-align: center; margin-bottom: 25px; }
         .menu-select { width: 100%; padding: 12px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 20px; background: #fff; }
         .form-section { display: none; }
@@ -18,7 +18,11 @@
         .alert { padding: 15px; margin-top: 20px; border-radius: 5px; font-weight: bold; text-align: center; }
         .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .spinner { text-align: center; margin-top: 15px; display: none; font-style: italic; color: #666; }
+        .tab-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .tab-btn { background-color: #e9ecef; color: #333; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; flex: 1; font-weight: bold; }
+        .tab-btn.active { background-color: #1f77b4; color: white; }
     </style>
 </head>
 <body>
@@ -27,21 +31,16 @@
     <h1>🏫 Portal de Instituciones - Modelos ONU</h1>
 
     <label for="menuOpcion">Seleccionar Opción:</label>
-    <select id="menuOpcion" class="menu-select" onchange="cambiarSeccion()">
-        <option value="acreditacion">🎫 Acreditación Presencial</option>
-        <option value="preinscripcion">📝 Preinscripción Institucional</option>
-        <option value="ingreso">🔑 Ingreso a Mi Delegación</option>
-        <option value="pago">💳 Subir Comprobante de Pago</option>
-    </select>
+    <select id="menuOpcion" class="menu-select" onchange="cambiarSeccion()"></select>
 
-    <div id="spinner" class="spinner">Procesando solicitud con Google Apps Script... por favor espere.</div>
+    <div id="spinner" class="spinner">Procesando solicitud con el servidor... por favor espere.</div>
 
     <!-- 1. ACREDITACIÓN PRESENCIAL -->
-    <div id="sec-acreditacion" class="form-section active">
-        <h2>🎫 Terminal de Acreditación Presencial</h2>
-        <p>Seleccione el Modelo correspondiente e ingrese el DNI del participante.</p>
+    <div id="sec-acreditacion" class="form-section">
+        <h2>🎫 Terminal de Acreditación - Modelos ONU</h2>
+        <p>Seleccione el Modelo correspondiente e ingrese el DNI del participante para validar su ingreso.</p>
         
-        <label>Seleccionar Modelo ONU:</label>
+        <label>Seleccionar Modelo ONU para Acreditar:</label>
         <select id="acred_modelo"></select>
 
         <label>Número de DNI del Participante:</label>
@@ -87,7 +86,7 @@
         <label>Crear Clave de Acceso:</label>
         <input type="password" id="pre_hash">
 
-        <button onclick="enviarPreinscripcion()">Enviar Preinscripcion</button>
+        <button onclick="enviarPreinscripcion()">Enviar Preinscripción</button>
         <div id="resultado_preinscripcion"></div>
     </div>
 
@@ -123,18 +122,103 @@
         <div id="resultado_pago"></div>
     </div>
 
+    <!-- 5. CARGA DE NÓMINA Y DOCUMENTACIÓN -->
+    <div id="sec-nomina" class="form-section">
+        <h2>📋 Registro de Participantes y Documentación</h2>
+        <label>Código de Delegación:</label>
+        <input type="text" id="nom_id">
+
+        <label>Clave de Acceso:</label>
+        <input type="password" id="nom_hash">
+
+        <button onclick="verificarEscuelaNomina()">Verificar e Ingresar</button>
+        <div id="resultado_verif_nomina"></div>
+
+        <div id="bloque_carga_nomina" style="display:none; margin-top:25px;">
+            <div class="tab-buttons">
+                <div id="btnTabEst" class="tab-btn active" onclick="cambiarSubTab('est')">👨‍🎓 Estudiante</div>
+                <div id="btnTabDoc" class="tab-btn" onclick="cambiarSubTab('doc')">👨‍🏫 Docente</div>
+            </div>
+
+            <!-- TAB ESTUDIANTE -->
+            <div id="subtab-est" style="margin-top: 15px;">
+                <label>Banca / Asignación:</label>
+                <select id="est_banca"></select>
+
+                <label>Nombre:</label>
+                <input type="text" id="est_nombre">
+
+                <label>Apellido:</label>
+                <input type="text" id="est_apellido">
+
+                <label>DNI:</label>
+                <input type="text" id="est_dni">
+
+                <button onclick="guardarParticipante('Delegado/a')">Guardar Estudiante</button>
+            </div>
+
+            <!-- TAB DOCENTE -->
+            <div id="subtab-doc" style="display:none; margin-top: 15px;">
+                <label>Nombre:</label>
+                <input type="text" id="doc_nombre">
+
+                <label>Apellido:</label>
+                <input type="text" id="doc_apellido">
+
+                <label>DNI:</label>
+                <input type="text" id="doc_dni">
+
+                <button onclick="guardarParticipante('Docente Acompañante')">Guardar Docente</button>
+            </div>
+
+            <div id="resultado_guardar_nomina"></div>
+        </div>
+    </div>
+
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzbPKv-DdELuHy2FugQ3s6ZENEU1gUwFiDaK05r2t6qaqaUND7bmNqfwOsePnPNYb_hJQ/exec";
 
+    // 🎛️ INTERRUPTOR DE MODO EVENTO
+    // - false: Oculta la acreditación por completo y muestra solo el menú normal de escuelas.
+    // - true: Muestra exclusivamente la terminal de acreditación presencial.
+    const MODO_SOLO_ACREDITACION = false;
+
+    function inicializarMenu() {
+        const menuSelect = document.getElementById("menuOpcion");
+        menuSelect.innerHTML = "";
+        
+        if (MODO_SOLO_ACREDITACION) {
+            menuSelect.innerHTML = `<option value="acreditacion">🎫 Acreditación Presencial</option>`;
+        } else {
+            menuSelect.innerHTML = `
+                <option value="preinscripcion">📝 Preinscripción Institucional</option>
+                <option value="ingreso">🔑 Ingreso a Mi Delegación</option>
+                <option value="pago">💳 Subir Comprobante de Pago</option>
+                <option value="nomina">📋 Carga de Nómina y Documentación</option>
+            `;
+        }
+        cambiarSeccion();
+    }
+
     function cambiarSeccion() {
         const sel = document.getElementById("menuOpcion").value;
         document.querySelectorAll('.form-section').forEach(sec => sec.classList.remove('active'));
-        document.getElementById(`sec-${sel}`).classList.add('active');
+        
+        const secActual = document.getElementById(`sec-${sel}`);
+        if(secActual) secActual.classList.add('active');
+
         if(sel === 'acreditacion' || sel === 'preinscripcion') {
             cargarModelosActivos(sel);
         }
+    }
+
+    function cambiarSubTab(tipo) {
+        document.getElementById("btnTabEst").classList.toggle("active", tipo === 'est');
+        document.getElementById("btnTabDoc").classList.toggle("active", tipo === 'doc');
+        document.getElementById("subtab-est").style.display = tipo === 'est' ? 'block' : 'none';
+        document.getElementById("subtab-doc").style.display = tipo === 'doc' ? 'block' : 'none';
     }
 
     async function cargarModelosActivos(tipo) {
@@ -153,10 +237,15 @@
     }
 
     async function acreditarParticipante() {
+        if (!MODO_SOLO_ACREDITACION) {
+            document.getElementById("resultado_acreditacion").innerHTML = `<div class="alert warning">⚠️ La terminal de acreditación se encuentra deshabilitada temporalmente.</div>`;
+            return;
+        }
+
         let dni = document.getElementById("acred_dni").value.trim();
         let modelo = document.getElementById("acred_modelo").value;
         let resDiv = document.getElementById("resultado_acreditacion");
-        if(!dni) { resDiv.innerHTML = `<div class="alert error">Ingrese un DNI</div>`; return; }
+        if(!dni) { resDiv.innerHTML = `<div class="alert error">Por favor ingrese un DNI.</div>`; return; }
         
         document.getElementById("spinner").style.display = "block";
         try {
@@ -166,9 +255,12 @@
             if(json.status === "SUCCESS") {
                 let d = json.data;
                 resDiv.innerHTML = `<div class="alert success">✅ ¡ACREDITADO CON ÉXITO!<br>
-                    <strong>Participante:</strong> ${d.nombre} ${d.apellido}<br>
+                    <strong>👤 ${d.nombre} ${d.apellido}</strong><br>
+                    <strong>DNI:</strong> ${d.dni}<br>
                     <strong>Institución:</strong> ${d.nombre_colegio}<br>
-                    <strong>Rol:</strong> ${d.rol_mnu} | <strong>Asignación:</strong> ${d.id_asignacion}</div>`;
+                    <strong>Rol / Cargo:</strong> ${d.rol_mnu}<br>
+                    <strong>Banca / Asignación:</strong> ${d.id_asignacion}<br>
+                    <strong>Modelo:</strong> ${d.id_modelo}</div>`;
             } else {
                 resDiv.innerHTML = `<div class="alert error">❌ ${json.message}</div>`;
             }
@@ -226,7 +318,7 @@
                 let resAsig = await fetch(`${API_URL}?action=GET_ASIGNACIONES_DELEGACION&id_delegacion=${id}`);
                 let jsonAsig = await resAsig.json();
                 let bancasHTML = "<ul>";
-                jsonAsig.data.forEach(b => { bancasHTML += `<li><strong>${b.organo}</strong> — País: ${b.pais}</li>`; });
+                jsonAsig.data.forEach(b => { bancasHTML += `<li><strong>${b.organo}</strong> — País: ${b.pais} (ID: ${b.id_asignacion})</li>`; });
                 bancasHTML += "</ul>";
                 resDiv.innerHTML = `<div class="alert success"><h3>🏛️ ${escuela.nombre_colegio}</h3><p>Acceso correcto. Bancas asignadas:</p>${bancasHTML}</div>`;
             } else {
@@ -269,7 +361,7 @@
                 let json = await res.json();
                 document.getElementById("spinner").style.display = "none";
                 if(json.status === "SUCCESS") {
-                    resDiv.innerHTML = `<div class="alert success">¡Comprobante subido con éxito!</div>`;
+                    resDiv.innerHTML = `<div class="alert success">¡Comprobante subido!</div>`;
                 } else {
                     resDiv.innerHTML = `<div class="alert error">${json.message}</div>`;
                 }
@@ -280,8 +372,94 @@
         };
     }
 
-    // Cargar modelos al iniciar
-    window.onload = () => { cargarModelosActivos('acreditacion'); };
+    async function verificarEscuelaNomina() {
+        let id = document.getElementById("nom_id").value.trim().toUpperCase();
+        let hash = document.getElementById("nom_hash").value.trim();
+        let resDiv = document.getElementById("resultado_verif_nomina");
+        
+        document.getElementById("spinner").style.display = "block";
+        try {
+            let res = await fetch(`${API_URL}?action=GET_TODAS_DELEGACIONES`);
+            let json = await res.json();
+            document.getElementById("spinner").style.display = "none";
+            let escuela = json.data.find(d => String(d.id_delegacion).toUpperCase() === id && String(d.secret_hash) === hash);
+            if(escuela) {
+                resDiv.innerHTML = `<div class="alert success">Autenticación correcta para ${escuela.nombre_colegio}</div>`;
+                document.getElementById("bloque_carga_nomina").style.display = "block";
+                
+                let resAsig = await fetch(`${API_URL}?action=GET_ASIGNACIONES_DELEGACION&id_delegacion=${id}`);
+                let jsonAsig = await resAsig.json();
+                let options = "";
+                if(jsonAsig.data && jsonAsig.data.length > 0) {
+                    jsonAsig.data.forEach(b => {
+                        options += `<option value="${b.id_asignacion}">${b.organo} — ${b.pais}</option>`;
+                    });
+                } else {
+                    options = `<option value="-">Sin Asignación</option>`;
+                }
+                document.getElementById("est_banca").innerHTML = options;
+            } else {
+                resDiv.innerHTML = `<div class="alert error">Datos incorrectos.</div>`;
+                document.getElementById("bloque_carga_nomina").style.display = "none";
+            }
+        } catch(e) {
+            document.getElementById("spinner").style.display = "none";
+            resDiv.innerHTML = `<div class="alert error">Error de conexión</div>`;
+        }
+    }
+
+    async function guardarParticipante(rol) {
+        let idDel = document.getElementById("nom_id").value.trim().toUpperCase();
+        let hash = document.getElementById("nom_hash").value.trim();
+        let nombre = rol === 'Delegado/a' ? document.getElementById("est_nombre").value : document.getElementById("doc_nombre").value;
+        let apellido = rol === 'Delegado/a' ? document.getElementById("est_apellido").value : document.getElementById("doc_apellido").value;
+        let dni = rol === 'Delegado/a' ? document.getElementById("est_dni").value : document.getElementById("doc_dni").value;
+        let idAsig = rol === 'Delegado/a' ? document.getElementById("est_banca").value : "-";
+
+        let payload = {
+            action: "GUARDAR_PARTICIPANTE_NOMINA",
+            data: {
+                id_delegacion: idDel,
+                secret_hash: hash,
+                id_asignacion: idAsig,
+                rol_mnu: rol,
+                nombre: nombre,
+                apellido: apellido,
+                dni: dni,
+                alergias_medicas: "Ninguna",
+                ficha_b64: "", ficha_name: "", ficha_mime: "",
+                aut_b64: "", aut_name: "", aut_mime: ""
+            }
+        };
+
+        let resDiv = document.getElementById("resultado_guardar_nomina");
+        document.getElementById("spinner").style.display = "block";
+        try {
+            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            let json = await res.json();
+            document.getElementById("spinner").style.display = "none";
+            if(json.status === "SUCCESS") {
+                resDiv.innerHTML = `<div class="alert success">¡Guardado con éxito!</div>`;
+                if(rol === 'Delegado/a') {
+                    document.getElementById("est_nombre").value = "";
+                    document.getElementById("est_apellido").value = "";
+                    document.getElementById("est_dni").value = "";
+                } else {
+                    document.getElementById("doc_nombre").value = "";
+                    document.getElementById("doc_apellido").value = "";
+                    document.getElementById("doc_dni").value = "";
+                }
+            } else {
+                resDiv.innerHTML = `<div class="alert error">${json.message}</div>`;
+            }
+        } catch(e) {
+            document.getElementById("spinner").style.display = "none";
+            resDiv.innerHTML = `<div class="alert error">Error de conexión</div>`;
+        }
+    }
+
+    // Inicializar menú según la variable global
+    window.onload = () => { inicializarMenu(); };
 </script>
 
 </body>

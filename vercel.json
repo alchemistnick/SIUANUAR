@@ -3,10 +3,6 @@
   "public": true,
   "routes": [
     {
-      "src": "/secretaria",
-      "dest": "/secretaria.html"
-    },
-    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
